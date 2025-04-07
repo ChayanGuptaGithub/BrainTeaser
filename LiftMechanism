@@ -1,0 +1,106 @@
+import java.util.*;
+
+public class SmartLiftSimulation {
+    private static int currentFloor = 0; // 0 = G
+    private static boolean goingUp = true;
+
+    private static TreeSet<Integer> upQueue = new TreeSet<>();
+    private static TreeSet<Integer> downQueue = new TreeSet<>(Collections.reverseOrder());
+
+    public static void main(String[] args) throws InterruptedException {
+        Scanner scanner = new Scanner(System.in);
+
+        while (true) {
+            System.out.println("\n=== Current Floor: " + floorName(currentFloor) + " ===");
+            System.out.println("Choose action:");
+            System.out.println("1. Call lift from a floor");
+            System.out.println("2. Press floor button inside lift");
+            System.out.print("Your choice: ");
+            String choice = scanner.nextLine().trim();
+
+            switch (choice) {
+                case "1" -> {
+                    System.out.print("Enter your floor (G, 1, 2, 3): ");
+                    int floor = parseFloor(scanner.nextLine().trim().toUpperCase());
+                    if (floor != -1 && floor != currentFloor) {
+                        addRequest(floor);
+                    }
+                }
+                case "2" -> {
+                    System.out.print("Enter destination floor (G, 1, 2, 3): ");
+                    int floor = parseFloor(scanner.nextLine().trim().toUpperCase());
+                    if (floor != -1 && floor != currentFloor) {
+                        addRequest(floor);
+                    }
+                }
+                default -> System.out.println("Invalid option.");
+            }
+
+            processRequests();
+        }
+    }
+
+    private static void addRequest(int floor) {
+        if (floor > currentFloor) upQueue.add(floor);
+        else downQueue.add(floor);
+    }
+
+    private static void processRequests() throws InterruptedException {
+        while (!upQueue.isEmpty() || !downQueue.isEmpty()) {
+            if (goingUp && !upQueue.isEmpty()) {
+                Integer next = upQueue.higher(currentFloor);
+                if (next == null) {
+                    goingUp = false; // no higher floor left
+                    continue;
+                }
+                moveTo(next);
+                upQueue.remove(next);
+            } else if (!goingUp && !downQueue.isEmpty()) {
+                Integer next = downQueue.lower(currentFloor);
+                if (next == null) {
+                    goingUp = true; // no lower floor left
+                    continue;
+                }
+                moveTo(next);
+                downQueue.remove(next);
+            } else {
+                goingUp = !goingUp; // switch direction
+            }
+        }
+    }
+
+    private static void moveTo(int targetFloor) throws InterruptedException {
+        System.out.println("\nLift moving " + (targetFloor > currentFloor ? "up" : "down") + " to " + floorName(targetFloor));
+        while (currentFloor != targetFloor) {
+            Thread.sleep(800);
+            currentFloor += (targetFloor > currentFloor) ? 1 : -1;
+            System.out.println("Reached floor: " + floorName(currentFloor));
+        }
+        System.out.println("Doors Opening...");
+        Thread.sleep(1000);
+        System.out.println("Doors Closing...");
+    }
+
+    private static int parseFloor(String input) {
+        return switch (input) {
+            case "G" -> 0;
+            case "1" -> 1;
+            case "2" -> 2;
+            case "3" -> 3;
+            default -> {
+                System.out.println("Invalid floor input.");
+                yield -1;
+            }
+        };
+    }
+
+    private static String floorName(int floor) {
+        return switch (floor) {
+            case 0 -> "G";
+            case 1 -> "1";
+            case 2 -> "2";
+            case 3 -> "3";
+            default -> "?";
+        };
+    }
+}
